@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, TextInput, ScrollView, TouchableOpacity, Image, ActivityIndicator } from 'react-native';
+import { View, Text, TextInput, ScrollView, TouchableOpacity, Image, ActivityIndicator, Alert } from 'react-native';
 import { Search, History, Play, Bookmark, XCircle } from 'lucide-react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { searchTracks } from '../services/api';
@@ -10,6 +10,7 @@ export default function Home({ onPlayTrack, activeTab, onTabChange }) {
   const [loading, setLoading] = useState(false);
   const [filter, setFilter] = useState('Songs');
   const [savedPlaylists, setSavedPlaylists] = useState([]);
+  const [serverIp, setServerIp] = useState('');
   
   const [homeData, setHomeData] = useState({
     trending: [],
@@ -24,6 +25,9 @@ export default function Home({ onPlayTrack, activeTab, onTabChange }) {
       try {
         const storedPlaylists = await AsyncStorage.getItem('savedPlaylists');
         if (storedPlaylists) setSavedPlaylists(JSON.parse(storedPlaylists));
+
+        const storedIp = await AsyncStorage.getItem('server_url');
+        if (storedIp) setServerIp(storedIp);
 
         const [trendingData, lofiData, hiphopData, workoutData] = await Promise.all([
           searchTracks("global top 50 hit songs audio"),
@@ -60,6 +64,17 @@ export default function Home({ onPlayTrack, activeTab, onTabChange }) {
     }, 500);
     return () => clearTimeout(delayDebounceFn);
   }, [query]);
+
+  const handleSaveIp = async () => {
+    try {
+      if (serverIp.trim() !== '') {
+        await AsyncStorage.setItem('server_url', serverIp.trim());
+        Alert.alert("Server Saved!", "The app is now connected to " + serverIp + ". Please swipe the app closed and reopen it to apply!");
+      }
+    } catch (error) {
+      console.error("Error saving IP:", error);
+    }
+  };
 
   const toggleSavePlaylist = async (playlist) => {
     try {
@@ -233,6 +248,38 @@ export default function Home({ onPlayTrack, activeTab, onTabChange }) {
                 ))}
               </View>
             )}
+          </View>
+        )}
+
+        {/* SETTINGS TAB */}
+        {activeTab === 'settings' && (
+          <View className="flex-1">
+            <Text className="text-on-surface font-bold text-2xl mb-2 mt-2">Settings</Text>
+            <Text className="text-on-surface-variant text-sm mb-6">Configure your custom backend server.</Text>
+            
+            <View className="bg-surface-container rounded-2xl p-4">
+              <Text className="text-on-surface font-bold text-base mb-2">Backend Server IP</Text>
+              <Text className="text-on-surface-variant text-xs mb-4">If your computer's Wi-Fi IP address changes, type the new one below to instantly reconnect!</Text>
+              
+              <View className="flex-row items-center bg-surface-container-high rounded-xl px-4 py-1 mb-4 h-12">
+                <TextInput
+                  className="flex-1 text-on-surface ml-2 font-medium"
+                  placeholder="e.g. http://192.168.0.101:8000"
+                  placeholderTextColor="#958ea0"
+                  value={serverIp}
+                  onChangeText={setServerIp}
+                  autoCapitalize="none"
+                  autoCorrect={false}
+                />
+              </View>
+              
+              <TouchableOpacity 
+                className="bg-primary rounded-full py-3 items-center w-full"
+                onPress={handleSaveIp}
+              >
+                <Text className="text-on-primary font-bold">Save & Reconnect</Text>
+              </TouchableOpacity>
+            </View>
           </View>
         )}
 

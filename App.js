@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { SafeAreaView, StatusBar, StyleSheet, View, TouchableOpacity, Text } from 'react-native';
 import { useAudioPlayer, useAudioPlayerStatus } from 'expo-audio';
-import { Home as HomeIcon, Search, Library } from 'lucide-react-native';
+import { Home as HomeIcon, Search, Library, Settings as SettingsIcon } from 'lucide-react-native';
 import Home from './components/Home';
 import MiniPlayer from './components/MiniPlayer';
 import NowPlaying from './components/NowPlaying';
@@ -198,6 +198,11 @@ function App() {
         <TouchableOpacity className="items-center" onPress={() => setActiveTab('library')}>
           <Library color={activeTab === 'library' ? '#d0bcff' : '#958ea0'} size={24} />
           <Text className={`text-xs mt-1 ${activeTab === 'library' ? 'text-[#d0bcff]' : 'text-[#958ea0]'}`}>Playlists</Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity className="items-center" onPress={() => setActiveTab('settings')}>
+          <SettingsIcon color={activeTab === 'settings' ? '#d0bcff' : '#958ea0'} size={24} />
+          <Text className={`text-xs mt-1 ${activeTab === 'settings' ? 'text-[#d0bcff]' : 'text-[#958ea0]'}`}>Settings</Text>
         </TouchableOpacity>
       </View>
 
