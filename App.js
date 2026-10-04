@@ -8,6 +8,9 @@ import NowPlaying from './components/NowPlaying';
 import { getStreamUrl, getRadioQueue } from './services/api';
 import './global.css';
 
+// 1. Import the global audio config 
+import { setAudioModeAsync } from 'expo-audio';
+
 function App() {
   const [currentTrack, setCurrentTrack] = useState(null);
   const [queue, setQueue] = useState([]);
@@ -21,6 +24,15 @@ function App() {
   const player = useAudioPlayer();
   const status = useAudioPlayerStatus(player);
   const lastSkippedTime = useRef(0);
+
+  // 2. Globally force Android to keep the Audio Engine alive in the background
+  useEffect(() => {
+    setAudioModeAsync({
+      shouldPlayInBackground: true,
+      interruptionMode: 'doNotMix',
+      playsInSilentMode: true,
+    });
+  }, []);
 
   // expo-audio uses SECONDS. We multiply by 1000 to work in milliseconds!
   const position = (status.currentTime || 0) * 1000;
@@ -76,6 +88,13 @@ function App() {
       
       const streamUrl = await getStreamUrl(track.id);
       if (!streamUrl) throw new Error('Stream URL not found');
+
+      // 3. Register the lock screen controls to prevent Android from killing the background service!
+      player.setActiveForLockScreen(true, {
+        title: track.title,
+        artist: track.artist,
+        artworkUrl: track.thumbnail,
+      });
 
       player.replace(streamUrl);
       player.play();
