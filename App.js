@@ -39,9 +39,9 @@ function App() {
   const duration = (status.duration || 0) * 1000;
 
   useEffect(() => {
-    // Auto-play next track when finished, debounced by 5 seconds to prevent React state race conditions
-    const now = Date.now();
-    if (duration > 0 && position > 0 && position >= duration - 1000) {
+    // Auto-play next track when finished natively (wakes up JS thread even in background)
+    if (status.didJustFinish) {
+      const now = Date.now();
       if (now - lastSkippedTime.current > 5000) {
         lastSkippedTime.current = now;
         if (repeatMode === 2) {
@@ -52,7 +52,7 @@ function App() {
         }
       }
     }
-  }, [position, duration, repeatMode]);
+  }, [status.didJustFinish, repeatMode]);
 
   const handlePlayTrack = async (track, newQueue = null, index = 0) => {
     try {
