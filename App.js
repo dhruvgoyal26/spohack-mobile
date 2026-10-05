@@ -20,6 +20,7 @@ function App() {
   const [isPlaying, setIsPlaying] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [modalVisible, setModalVisible] = useState(false);
+  const [nextStreamUrl, setNextStreamUrl] = useState(null);
 
   const player = useAudioPlayer();
   const status = useAudioPlayerStatus(player);
@@ -39,6 +40,20 @@ function App() {
   const duration = (status.duration || 0) * 1000;
 
   useEffect(() => {
+    // Proactively fetch the NEXT song's stream URL in the background while the current song is playing!
+    // This allows instant playback when the track finishes, preventing Android from suspending the app.
+    if (queue.length > 0) {
+      let nextIndex = currentIndex + 1;
+      if (nextIndex >= queue.length && repeatMode === 1) {
+        nextIndex = 0;
+      }
+      if (nextIndex < queue.length) {
+        getStreamUrl(queue[nextIndex].id).then(url => setNextStreamUrl(url));
+      }
+    }
+  }, [currentIndex, queue, repeatMode]);
+
+  useEffect(() => {
     // Auto-play next track when finished natively (wakes up JS thread even in background)
     if (status.didJustFinish) {
       const now = Date.now();
@@ -54,7 +69,7 @@ function App() {
     }
   }, [status.didJustFinish, repeatMode]);
 
-  const handlePlayTrack = async (track, newQueue = null, index = 0) => {
+  const handlePlayTrack = async (track, newQueue = null, index = 0, prefetchedUrl = null) => {
     try {
       setCurrentTrack(track);
       setModalVisible(true); // Open Now Playing immediately
@@ -86,7 +101,7 @@ function App() {
         });
       }
       
-      const streamUrl = await getStreamUrl(track.id);
+      const streamUrl = prefetchedUrl || await getStreamUrl(track.id);
       if (!streamUrl) throw new Error('Stream URL not found');
 
       // 3. Register the lock screen controls to prevent Android from killing the background service!
@@ -140,10 +155,10 @@ function App() {
     if (queue.length > 0) {
       if (currentIndex < queue.length - 1) {
         const nextIndex = currentIndex + 1;
-        handlePlayTrack(queue[nextIndex], queue, nextIndex);
+        handlePlayTrack(queue[nextIndex], queue, nextIndex, nextStreamUrl);
       } else if (repeatMode === 1) {
         // Repeat All: loop to the start
-        handlePlayTrack(queue[0], queue, 0);
+        handlePlayTrack(queue[0], queue, 0, nextStreamUrl);
       }
     }
   };
